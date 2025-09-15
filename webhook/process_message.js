@@ -52,7 +52,7 @@ export async function processWhatsAppMessage(entry) {
 
         const config = {
           accessToken: process.env.WHATSAPP_ACCESS_TOKEN,
-          phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID,
+          phoneNumberId: process.env.WHATSAPP_HK_PHONE_NUMBER_ID,
           downloadDir: './audio-downloads',
           language: null // Auto-detect language
         };

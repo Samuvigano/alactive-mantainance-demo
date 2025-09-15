@@ -68,7 +68,11 @@ app.post('/agent', async (req, res) => {
   }
 });
 
-
+app.post('/send_message', async (req, res) => {
+  const { phone_number, message } = req.body;
+  const result = await sendWhatsAppText({ to: phone_number, text: message });
+  return res.json({ output: result.finalOutput, usage: result.usage });
+});
 
 // ======================= Health Check Route ==================================
 app.get('/health', (req, res) => {

@@ -1,9 +1,9 @@
 import { tool } from '@openai/agents';
 import { z } from 'zod';
-// import { sendWhatsAppText } from '../../wapp/send_message.js';
+import { sendWhatsAppText } from '../../wapp/send_message.js';
 
 export const sendMessageToSpecialistTool = tool({
-  name: 'send_message',
+  name: 'send_message_to_specialist',
   description: 'Send a message to a person',
   parameters: z.object({
     message: z.string().describe('The message to send'),
@@ -13,19 +13,19 @@ export const sendMessageToSpecialistTool = tool({
     console.log('[Tool:send_message] placeholder send', { to: phone_number, text: message });
 
     // Real send (disabled in placeholder mode)
-    // const to = phone_number;
-    // const text = message;
-    // const data = await sendWhatsAppText({ to, text });
-    // console.log('[Tool:send_message] real send result', { data });
-    // return { success: true, data };
+    const to = phone_number;
+    const text = message;
+    const data = await sendWhatsAppText({ to, text });
+    console.log('[Tool:send_message] real send result', { data });
+    return { success: true, data };
 
-    return {
-      success: true,
-      placeholder: true,
-      message: 'Message sent (placeholder)',
-      to: phone_number,
-      text: message,
-    };
+    // return {
+    //   success: true,
+    //   placeholder: true,
+    //   message: 'Message sent (placeholder)',
+    //   to: phone_number,
+    //   text: message,
+    // };
   },
 });
 

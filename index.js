@@ -18,7 +18,7 @@ app.use(express.json());
 
 
 // ======================= Webhook Verification ============================
-app.get("/mantainance/webhook", (req, res) => {
+app.get("/webhook", (req, res) => {
   const mode = req.query["hub.mode"];
   const token = req.query["hub.verify_token"];
   const challenge = req.query["hub.challenge"];
@@ -36,7 +36,7 @@ app.get("/mantainance/webhook", (req, res) => {
 });
 
 // ======================= Webhook Endpoint ====================================
-app.post("/mantainance/webhook", async (req, res) => {
+app.post("/webhook", async (req, res) => {
   try {
     // Always acknowledge the webhook immediately to avoid retries
     const { entry } = req.body ?? {};
@@ -54,7 +54,7 @@ app.post("/mantainance/webhook", async (req, res) => {
 
 
 // ======================= Api Agent, DEBUGGING ==========================
-app.post('/api/agent', async (req, res) => {
+app.post('/agent', async (req, res) => {
   try {
     const { input } = req.body ?? {};
     if (!input || typeof input !== 'string') {

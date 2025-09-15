@@ -8,7 +8,7 @@ export const sendMessageToSpecialistTool = tool({
   name: 'send_message_to_specialist',
   description: 'Send a message to a person',
   parameters: z.object({
-    message: z.string().describe('The message to send'),
+    message: z.string().describe('The message to send. Always in Italian.'),
     phone_number: z.string().describe('The phone number of the recipient'),
     scan_for_images: z.boolean().describe('Whether to scan the current chat conversation for images sent by the user that should be attached to the message sent to the specialist'),
     sender_wa_id: z.string().optional().nullable().describe('Housekeeper phone number in WhatsApp format (no spaces, no +, with area code if there, e.g. "393450890959" for "+39 345 089 09 59") - required when scan_for_images is true'),

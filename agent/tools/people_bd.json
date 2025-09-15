@@ -1,0 +1,51 @@
+[
+    {
+      "type": "Electrician",
+      "name": "Stefano",
+      "phone_number": "+39 3348443505",
+      "available_days": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+      "available_times": "9:00-20:00"
+    },
+    {
+      "type": "Plumber",
+      "name": "Samuele",
+      "phone_number": "+39 3450890959",
+      "available_days": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+      "available_times": "9:00-20:00"
+    },
+    {
+      "type": "Electrician",
+      "name": "Andrea",
+      "phone_number": "+39 3348443505",
+      "available_days": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+      "available_times": "Anytime"
+    },
+    {
+      "type": "Plumber",
+      "name": "Luigi",
+      "phone_number": "+39 3450890959",
+      "available_days": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+      "available_times": "Anytime"
+    },
+    {
+      "type": "Food & Beverage",
+      "name": "Cristiano",
+      "phone_number": "+39 3348443505",
+      "available_days": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+      "available_times": "Anytime"
+    },
+    {
+      "type": "Blacksmith",
+      "name": "Samuele",
+      "phone_number": "+39 3450890959",
+      "available_days": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+      "available_times": "Anytime"
+    },
+    {
+      "type": "Receptionist",
+      "name": "Manuel",
+      "phone_number": "+39 3348443505",
+      "available_days": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+      "available_times": "Anytime"
+    }
+  ]

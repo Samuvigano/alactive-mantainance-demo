@@ -11,11 +11,12 @@ export const sendMessageToSpecialistTool = tool({
   }),
   execute: async ({ message, phone_number }) => {
     console.log('[Tool:send_message] placeholder send', { to: phone_number, text: message });
+    const phone_number_id = process.env.WHATSAPP_SPECIALIST_PHONE_NUMBER_ID;
 
     // Real send (disabled in placeholder mode)
-    const to = phone_number;
+    const to = phone_number;  
     const text = message;
-    const data = await sendWhatsAppText({ to, text });
+    const data = await sendWhatsAppText({ to, text, phone_number_id });
     console.log('[Tool:send_message] real send result', { data });
     return { success: true, data };
 

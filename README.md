@@ -1,60 +1,173 @@
-# OpenAI Server
+# Maintenance Agent System
 
-A simple Express.js server that integrates with the OpenAI API.
+A WhatsApp-based maintenance request system that uses AI agents to process housekeeping requests and route them to appropriate specialists.
 
-## Setup
+## Features
+
+- WhatsApp webhook integration for receiving messages
+- Audio message transcription
+- AI agent for processing requests and routing to specialists
+- Ticket management system
+- Conversation context preservation
+- Database integration with Supabase
+
+## Conversation Context
+
+The agent now supports conversation context, allowing it to maintain memory of previous interactions. This enables more natural, contextual conversations.
+
+### Message Structure
+
+Messages should follow this structure for conversation context:
+
+```javascript
+{
+  "role": "user" | "assistant" | "system",
+  "content": [
+    {
+      "type": "text",
+      "text": "message text"
+    }
+  ],
+  "timestamp": "2024-01-01T12:00:00Z", // optional but recommended
+  "name": "sender_identifier" // optional
+}
+```
+
+### API Usage with Context
+
+#### POST `/agent` endpoint
+
+```javascript
+{
+  "input": "Current user message",
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "Previous user message"
+        }
+      ],
+      "timestamp": "2024-01-01T12:00:00Z"
+    },
+    {
+      "role": "assistant", 
+      "content": [
+        {
+          "type": "text",
+          "text": "Previous agent response"
+        }
+      ],
+      "timestamp": "2024-01-01T12:01:00Z"
+    }
+    // ... more previous messages
+  ]
+}
+```
+
+#### Direct Agent Usage
+
+```javascript
+import { runAgent } from './agent/agent.js';
+
+const conversationHistory = [
+  {
+    role: 'user',
+    content: [
+      {
+        type: 'text',
+        text: 'Hi, I need help with maintenance'
+      }
+    ],
+    timestamp: '2024-01-01T12:00:00Z'
+  },
+  {
+    role: 'assistant',
+    content: [
+      {
+        type: 'text',
+        text: 'Hello! I can help you with maintenance requests. What do you need?'
+      }
+    ],
+    timestamp: '2024-01-01T12:01:00Z'
+  }
+];
+
+const result = await runAgent(
+  'The bathroom sink is leaking', 
+  conversationHistory
+);
+```
+
+### Database Integration
+
+The system automatically:
+- Retrieves the last 10 messages from the database for context
+- Stores incoming user messages
+- Stores agent responses
+- Maintains conversation history per user/business combination
+
+**ID Mapping:**
+- `business_id` = `WHATSAPP_HK_PHONE_NUMBER_ID` (from environment variable)
+- `user_id` = sender's WhatsApp user ID (`wa_id` from webhook contacts array)
+
+### WhatsApp Integration
+
+When processing WhatsApp messages, the system:
+1. Retrieves conversation history from the database
+2. Converts database messages to OpenAI format
+3. Passes context to the agent
+4. Stores both user messages and agent responses
+
+## Environment Variables
+
+Make sure to set these environment variables:
+
+```
+OPENAI_API_KEY=your_openai_api_key
+WHATSAPP_ACCESS_TOKEN=your_whatsapp_token
+WHATSAPP_PHONE_NUMBER_ID=your_phone_number_id
+WHATSAPP_HK_PHONE_NUMBER_ID=your_hk_phone_number_id
+SUPABASE_URL=your_supabase_url
+SUPABASE_KEY=your_supabase_key
+```
+
+## Installation
 
 1. Install dependencies:
 ```bash
 npm install
 ```
 
-2. Set up your environment variables:
-   - Copy `.env` file and add your OpenAI API key
-   - Replace `your_openai_api_key_here` with your actual OpenAI API key
+2. Set up your environment variables
 
-3. Start the server:
+3. Run the application:
 ```bash
 npm start
 ```
 
-Or for development with auto-reload:
-```bash
-npm run dev
-```
+## Database Schema
 
-## API Endpoints
+The system expects these Supabase tables:
 
-### GET /health
-Health check endpoint
-```bash
-curl http://localhost:3000/health
-```
+### `chats`
+- `id` (uuid, primary key)
+- `business_id` (text)
+- `user_id` (text)
+- `created_at` (timestamp)
 
-### GET /api/test
-Test the OpenAI integration with a simple "Hello!" message
-```bash
-curl http://localhost:3000/api/test
-```
+### `messages`
+- `id` (uuid, primary key)
+- `chat_id` (uuid, foreign key to chats.id)
+- `text` (text)
+- `is_user` (boolean)
+- `created_at` (timestamp)
 
-### POST /api/chat
-Send custom messages to OpenAI
-```bash
-curl -X POST http://localhost:3000/api/chat \
-  -H "Content-Type: application/json" \
-  -d '{
-    "input": "What is the weather like?",
-    "instructions": "You are a helpful weather assistant."
-  }'
-```
-
-## Environment Variables
-
-- `OPENAI_API_KEY`: Your OpenAI API key (required)
-- `PORT`: Server port (default: 3000)
-
-## Notes
-
-- The code uses GPT-4 model instead of GPT-5 (which doesn't exist yet)
-- Uses the chat completions API instead of the deprecated responses API
-- Includes error handling and logging 
+### `tickets`
+- `id` (uuid, primary key)
+- `description` (text)
+- `opened_by_phone_number` (text)
+- `latest` (text)
+- `is_open` (boolean)
+- `created_at` (timestamp) 

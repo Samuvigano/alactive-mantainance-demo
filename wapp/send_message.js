@@ -10,14 +10,13 @@ dotenv.config();
  * @param {string} params.text - Message body to send
  * @returns {Promise<Object>} - WhatsApp API response payload
  */
-export async function sendWhatsAppText({ to, text }) {
+export async function sendWhatsAppText({ to, text, phone_number_id }) {
   const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
-  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
 
   if (!accessToken) {
     throw new Error('WHATSAPP_ACCESS_TOKEN is not set');
   }
-  if (!phoneNumberId) {
+  if (!phone_number_id) {
     throw new Error('WHATSAPP_PHONE_NUMBER_ID is not set');
   }
   if (!to) {
@@ -27,7 +26,7 @@ export async function sendWhatsAppText({ to, text }) {
     throw new Error('Message "text" is required');
   }
 
-  const url = `https://graph.facebook.com/v18.0/${phoneNumberId}/messages`;
+  const url = `https://graph.facebook.com/v18.0/${phone_number_id}/messages`;
 
   try {
     const response = await axios.post(

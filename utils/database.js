@@ -121,4 +121,126 @@ export async function updateTicketLatest(ticketId, latest) {
   }
 }
 
+
+
+
+
+
+
+
+/**
+ * Get the last 10 messages of a chat
+ * @param {string} businessId - Business ID to identify the chat
+ * @param {string} userId - User ID to identify the chat
+ * @returns {Promise<Object>} Array of last 10 messages or error
+ */
+export async function getLastMessages(businessId, userId) {
+  try {
+    // First, find or get the chat_id based on business_id and user_id
+    const { data: chatData, error: chatError } = await supabase
+      .from('chats')
+      .select('id')
+      .eq('business_id', businessId)
+      .eq('user_id', userId)
+      .single();
+
+    if (chatError) {
+      console.error('Error finding chat:', chatError);
+      return { success: false, error: chatError.message };
+    }
+
+    if (!chatData) {
+      console.log('No chat found for business_id and user_id');
+      return { success: true, data: [] };
+    }
+
+    // Get the last 10 messages for this chat
+    const { data, error } = await supabase
+      .from('messages')
+      .select('*')
+      .eq('chat_id', chatData.id)
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    if (error) {
+      console.error('Error fetching messages:', error);
+      return { success: false, error: error.message };
+    }
+
+    console.log(`Found ${data.length} messages for chat`);
+    return { success: true, data: data.reverse() }; // Reverse to get chronological order
+  } catch (err) {
+    console.error('Exception fetching messages:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Add a message to a chat
+ * @param {string} businessId - Business ID to identify the chat
+ * @param {string} userId - User ID to identify the chat
+ * @param {string} text - Message text
+ * @param {boolean} isUser - Whether the message is from the user (default: true)
+ * @returns {Promise<Object>} The created message or error
+ */
+export async function addMessage(businessId, userId, text, isUser = true) {
+  try {
+    // First, find or create the chat based on business_id and user_id
+    let { data: chatData, error: chatError } = await supabase
+      .from('chats')
+      .select('id')
+      .eq('business_id', businessId)
+      .eq('user_id', userId)
+      .single();
+
+    if (chatError && chatError.code === 'PGRST116') {
+      // Chat doesn't exist, create it
+      const { data: newChatData, error: createChatError } = await supabase
+        .from('chats')
+        .insert([
+          {
+            business_id: businessId,
+            user_id: userId
+          }
+        ])
+        .select()
+        .single();
+
+      if (createChatError) {
+        console.error('Error creating chat:', createChatError);
+        return { success: false, error: createChatError.message };
+      }
+
+      chatData = newChatData;
+    } else if (chatError) {
+      console.error('Error finding chat:', chatError);
+      return { success: false, error: chatError.message };
+    }
+
+    // Add the message to the chat
+    const { data, error } = await supabase
+      .from('messages')
+      .insert([
+        {
+          chat_id: chatData.id,
+          text,
+          is_user: isUser,
+          created_at: new Date().toISOString()
+        }
+      ])
+      .select();
+
+    if (error) {
+      console.error('Error adding message:', error);
+      return { success: false, error: error.message };
+    }
+
+    console.log('Message added successfully:', data[0]);
+    return { success: true, data: data[0] };
+  } catch (err) {
+    console.error('Exception adding message:', err);
+    return { success: false, error: err.message };
+  }
+}
+
 export default supabase; 

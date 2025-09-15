@@ -38,8 +38,23 @@ app.get("/webhook", (req, res) => {
 // ======================= Webhook Endpoint ====================================
 app.post("/webhook", async (req, res) => {
   try {
+    // Log the incoming webhook for debugging
+    console.log('Webhook received:', JSON.stringify(req.body, null, 2));
+    
+    // Validate webhook structure
+    const { object, entry } = req.body ?? {};
+    
+    if (object !== 'whatsapp_business_account') {
+      console.log('Invalid webhook object type:', object);
+      return res.status(400).json({ error: 'Invalid webhook object type' });
+    }
+    
+    if (!entry || !Array.isArray(entry)) {
+      console.log('Invalid or missing entry array');
+      return res.status(400).json({ error: 'Invalid or missing entry array' });
+    }
+
     // Always acknowledge the webhook immediately to avoid retries
-    const { entry } = req.body ?? {};
     res.status(200).json({ status: 'received' });
 
     // Continue processing asynchronously after responding
@@ -48,7 +63,10 @@ app.post("/webhook", async (req, res) => {
   } catch (error) {
     // ----------- Error Handling -----------
     console.error('Webhook error:', error);
-    // Response already sent above
+    // Send error response if we haven't responded yet
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Webhook processing failed' });
+    }
   }
 });
 
@@ -56,11 +74,14 @@ app.post("/webhook", async (req, res) => {
 // ======================= Api Agent, DEBUGGING ==========================
 app.post('/agent', async (req, res) => {
   try {
-    const { input } = req.body ?? {};
+    const { input, messages = [] } = req.body ?? {};
     if (!input || typeof input !== 'string') {
       return res.status(400).json({ error: 'input (string) is required' });
     }
-    const result = await runAgent(input);
+    if (!Array.isArray(messages)) {
+      return res.status(400).json({ error: 'messages must be an array if provided' });
+    }
+    const result = await runAgent(input, messages);
     return res.json({ output: result.finalOutput, usage: result.usage });
   } catch (err) {
     console.error('Agent run failed:', err);

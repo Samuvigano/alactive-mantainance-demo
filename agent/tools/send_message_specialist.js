@@ -11,7 +11,7 @@ export const sendMessageToSpecialistTool = tool({
     message: z.string().describe('The message to send'),
     phone_number: z.string().describe('The phone number of the recipient'),
     scan_for_images: z.boolean().describe('Whether to scan the current chat conversation for images sent by the user that should be attached to the message sent to the specialist'),
-    sender_wa_id: z.string().optional().describe('Housekeeper phone number in WhatsApp format (no spaces, no +, with area code if there, e.g. "393450890959" for "+39 345 089 09 59") - required when scan_for_images is true'),
+    sender_wa_id: z.string().optional().nullable().describe('Housekeeper phone number in WhatsApp format (no spaces, no +, with area code if there, e.g. "393450890959" for "+39 345 089 09 59") - required when scan_for_images is true'),
   }),
   execute: async ({ message, phone_number, scan_for_images, sender_wa_id }) => {
     console.log('[Tool:send_message] placeholder send', { to: phone_number, text: message });

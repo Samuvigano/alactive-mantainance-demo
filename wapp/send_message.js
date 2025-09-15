@@ -4,13 +4,15 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 /**
- * Send a plain text WhatsApp message using the Cloud API
+ * Send a WhatsApp message (text, image, or image with caption) using the Cloud API
  * @param {Object} params
  * @param {string} params.to - Recipient phone number in international format
- * @param {string} params.text - Message body to send
+ * @param {string|null} params.text - Message body to send (can be null if image_url is provided)
+ * @param {string} params.phone_number_id - WhatsApp phone number ID
+ * @param {string|null} params.image_url - Image URL to send (optional)
  * @returns {Promise<Object>} - WhatsApp API response payload
  */
-export async function sendWhatsAppText({ to, text, phone_number_id }) {
+export async function sendWhatsAppText({ to, text, phone_number_id, image_url = null }) {
   const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
 
   if (!accessToken) {
@@ -22,21 +24,39 @@ export async function sendWhatsAppText({ to, text, phone_number_id }) {
   if (!to) {
     throw new Error('Recipient "to" is required');
   }
-  if (!text) {
-    throw new Error('Message "text" is required');
+  if (!text && !image_url) {
+    throw new Error('Either "text" or "image_url" is required');
   }
 
   const url = `https://graph.facebook.com/v18.0/${phone_number_id}/messages`;
 
+  let messageBody;
+
+  // If image_url is provided, send as image (with or without caption)
+  if (image_url) {
+    messageBody = {
+      messaging_product: 'whatsapp',
+      to,
+      type: 'image',
+      image: {
+        link: image_url,
+        ...(text && { caption: text }) // Add caption only if text is provided and not null/empty
+      },
+    };
+  } else {
+    // Send as text message
+    messageBody = {
+      messaging_product: 'whatsapp',
+      to,
+      type: 'text',
+      text: { body: text },
+    };
+  }
+
   try {
     const response = await axios.post(
       url,
-      {
-        messaging_product: 'whatsapp',
-        to,
-        type: 'text',
-        text: { body: text },
-      },
+      messageBody,
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,

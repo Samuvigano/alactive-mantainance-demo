@@ -14,13 +14,10 @@ export const sendMessageToSpecialistTool = tool({
     sender_wa_id: z.string().optional().nullable().describe('Housekeeper phone number in WhatsApp format (no spaces, no +, with area code if there, e.g. "393450890959" for "+39 345 089 09 59") - required when scan_for_images is true'),
   }),
   execute: async ({ message, phone_number, scan_for_images, sender_wa_id }) => {
-    console.log('[Tool:send_message] placeholder send', { to: phone_number, text: message });
+    console.log('[Tool:send_message] sending message', { to: phone_number, text: message, scan_for_images });
     const phone_number_id = process.env.WHATSAPP_SPECIALIST_PHONE_NUMBER_ID;
-
-    // Real send (disabled in placeholder mode)
     const to = phone_number;  
     const text = message;
-    const data = await sendWhatsAppText({ to, text, phone_number_id });
 
     let imageUrls = [];
     if (scan_for_images) {
@@ -34,20 +31,90 @@ export const sendMessageToSpecialistTool = tool({
       console.log('[Tool:send_message] Scanning for images in chat history...');
       imageUrls = await scanForImages(business_id, sender_wa_id);
       console.log('[Tool:send_message] Found images to attach:', imageUrls);
+    }
+
+    let sendResults = [];
+    
+    // Logic for sending messages based on text and images
+    if (text && imageUrls.length === 1) {
+      // Case: Text + one image -> Send together as image with caption
+      console.log('[Tool:send_message] Sending text with single image as caption');
+      const messageData = await sendWhatsAppText({ 
+        to, 
+        text, 
+        phone_number_id, 
+        image_url: imageUrls[0] 
+      });
+      sendResults.push(messageData);
+      console.log('[Tool:send_message] Text with image sent', { data: messageData });
       
-      // TODO: Implement image attachment to WhatsApp message
-      // For now, we'll just log the URLs that would be attached
-      if (imageUrls.length > 0) {
-        console.log('[Tool:send_message] Images that would be attached:', imageUrls);
+    } else if (text && imageUrls.length > 1) {
+      // Case: Text + multiple images -> Send text first, then images separately
+      console.log('[Tool:send_message] Sending text first, then multiple images separately');
+      
+      // Send text message first
+      const textMessageData = await sendWhatsAppText({ 
+        to, 
+        text, 
+        phone_number_id, 
+        image_url: null 
+      });
+      sendResults.push(textMessageData);
+      console.log('[Tool:send_message] Text message sent', { data: textMessageData });
+      
+      // Send all images separately
+      for (let i = 0; i < imageUrls.length; i++) {
+        try {
+          const imageData = await sendWhatsAppText({ 
+            to, 
+            text: null,
+            phone_number_id, 
+            image_url: imageUrls[i] 
+          });
+          sendResults.push(imageData);
+          console.log(`[Tool:send_message] Image ${i + 1} sent`, { data: imageData });
+        } catch (error) {
+          console.error(`[Tool:send_message] Failed to send image ${i + 1}:`, error);
+        }
+      }
+      
+    } else if (text && imageUrls.length === 0) {
+      // Case: Only text, no images -> Send text only
+      console.log('[Tool:send_message] Sending text only');
+      const textMessageData = await sendWhatsAppText({ 
+        to, 
+        text, 
+        phone_number_id, 
+        image_url: null 
+      });
+      sendResults.push(textMessageData);
+      console.log('[Tool:send_message] Text message sent', { data: textMessageData });
+      
+    } else if (!text && imageUrls.length > 0) {
+      // Case: Only images, no text -> Send images one by one
+      console.log('[Tool:send_message] Sending images only');
+      for (let i = 0; i < imageUrls.length; i++) {
+        try {
+          const imageData = await sendWhatsAppText({ 
+            to, 
+            text: null,
+            phone_number_id, 
+            image_url: imageUrls[i] 
+          });
+          sendResults.push(imageData);
+          console.log(`[Tool:send_message] Image ${i + 1} sent`, { data: imageData });
+        } catch (error) {
+          console.error(`[Tool:send_message] Failed to send image ${i + 1}:`, error);
+        }
       }
     }
 
-    console.log('[Tool:send_message] real send result', { data });
     return { 
       success: true, 
-      data,
+      data: sendResults,
       scanned_images: scan_for_images ? imageUrls : undefined,
-      images_found: scan_for_images ? imageUrls.length : undefined
+      images_found: scan_for_images ? imageUrls.length : undefined,
+      messages_sent: sendResults.length
     };
 
     // return {

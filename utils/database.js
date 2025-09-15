@@ -144,7 +144,11 @@ export async function getLastMessages(businessId, userId) {
       .eq('user_id', userId)
       .single();
 
-    if (chatError) {
+    if (chatError && chatError.code === 'PGRST116') {
+      // Chat doesn't exist, return empty messages array
+      console.log('No chat found for business_id and user_id');
+      return { success: true, data: [] };
+    } else if (chatError) {
       console.error('Error finding chat:', chatError);
       return { success: false, error: chatError.message };
     }

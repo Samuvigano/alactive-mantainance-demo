@@ -15,7 +15,3 @@ export const hkAgent = new Agent({
   instructions: agentInstructions,
   tools: [getPersonTool, getOpenTicketsTool, createTicketTool, updateTicketTool, sendMessageToSpecialistTool],
 });
-
-export {
-    hkAgent,
-}

@@ -6,7 +6,7 @@ export const updateTicketTool = tool({
   name: 'update_ticket',
   description: 'Update an existing ticket in the database. Can update description, opened_by_phone_number, latest status, or is_open status. Use this when receiving updates about ongoing maintenance requests or when closing completed tickets.',
   parameters: z.object({
-    ticket_id: z.string().describe('The UUID of the ticket to update. Use get_open_tickets first to find the correct ticket ID.'),
+    ticket_id: z.string().describe('The UUID of the ticket to update. You must use get_open_tickets first to find the correct ticket ID, then you can use the UUID here.'),
     description: z.string().nullable().describe('Updated description of the maintenance issue (optional - only if description needs to be modified)'),
     opened_by_phone_number: z.string().nullable().describe('Updated phone number of the person who opened the ticket (optional - rarely needed)'),
     latest: z.string().nullable().describe('Comprehensive summary of all actions and relevant information that have happened on this ticket. Should include chronological history of contacts, progress updates, completion status, and any important details. This is a cumulative field that summarizes the entire ticket lifecycle.'),

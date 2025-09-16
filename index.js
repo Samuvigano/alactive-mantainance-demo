@@ -2,6 +2,8 @@ import express from 'express';
 import OpenAI from 'openai';
 import dotenv from 'dotenv';
 import { runAgent } from './agent/agent.js';
+import { hkAgent } from './agent/hkAgent.js';
+import { specialistAgent } from './agent/specialistAgent.js';
 import { sendWhatsAppText } from './wapp/send_message.js';
 import { processWhatsAppMessage } from './webhook/process_message.js';
 
@@ -17,8 +19,11 @@ app.use(express.json());
 
 
 
+
+
+// SECTION: Webhook
 // ======================= Webhook Verification ============================
-app.get("/webhook", (req, res) => {
+const verifyWebhook = (req, res) => {
   const mode = req.query["hub.mode"];
   const token = req.query["hub.verify_token"];
   const challenge = req.query["hub.challenge"];
@@ -33,24 +38,33 @@ app.get("/webhook", (req, res) => {
     console.log("Webhook verification failed - token mismatch");
     res.sendStatus(403);
   }
+};
+
+app.get("/webhook", (req, res) => {
+  verifyWebhook(req, res);
+});
+
+app.get("/webhook_specialist", (req, res) => {
+  verifyWebhook(req, res);
 });
 
 // ======================= Webhook Endpoint ====================================
-app.post("/webhook", async (req, res) => {
+const processWebhook = async (req, res, isSpecialist = false) => {
   try {
-    // Log the incoming webhook for debugging
-    console.log('Webhook received:', JSON.stringify(req.body, null, 2));
+    const logPrefix = isSpecialist ? 'Specialist webhook' : 'Webhook';
+    console.log(`${logPrefix} received:`, JSON.stringify(req.body, null, 2));
     
-    // Validate webhook structure
     const { object, entry } = req.body ?? {};
     
     if (object !== 'whatsapp_business_account') {
-      console.log('Invalid webhook object type:', object);
+      const errorMsg = `Invalid webhook object type${isSpecialist ? ' (specialist)' : ''}:`;
+      console.log(errorMsg, object);
       return res.status(400).json({ error: 'Invalid webhook object type' });
     }
     
     if (!entry || !Array.isArray(entry)) {
-      console.log('Invalid or missing entry array');
+      const errorMsg = `Invalid or missing entry array${isSpecialist ? ' (specialist)' : ''}`;
+      console.log(errorMsg);
       return res.status(400).json({ error: 'Invalid or missing entry array' });
     }
 
@@ -58,20 +72,32 @@ app.post("/webhook", async (req, res) => {
     res.status(200).json({ status: 'received' });
 
     // Continue processing asynchronously after responding
-    setImmediate(() => processWhatsAppMessage(entry));
+    setImmediate(() => processWhatsAppMessage(entry, isSpecialist));
 
   } catch (error) {
-    // ----------- Error Handling -----------
-    console.error('Webhook error:', error);
-    // Send error response if we haven't responded yet
+    const errorPrefix = isSpecialist ? 'Specialist webhook error:' : 'Webhook error:';
+    console.error(errorPrefix, error);
     if (!res.headersSent) {
       res.status(500).json({ error: 'Webhook processing failed' });
     }
   }
+};
+
+app.post("/webhook", async (req, res) => {
+  await processWebhook(req, res, false);
+});
+
+app.post("/webhook_specialist", async (req, res) => {
+  await processWebhook(req, res, true);
 });
 
 
-// ======================= Api Agent, DEBUGGING ==========================
+
+
+
+
+// SECTION: Debugging
+// ======================= DEBUGGING: Agent ==========================
 app.post('/agent', async (req, res) => {
   try {
     const { input, messages = [] } = req.body ?? {};
@@ -81,7 +107,7 @@ app.post('/agent', async (req, res) => {
     if (!Array.isArray(messages)) {
       return res.status(400).json({ error: 'messages must be an array if provided' });
     }
-    const result = await runAgent(input, messages);
+    const result = await runAgent(input, messages, {}, hkAgent);
     return res.json({ output: result.finalOutput, usage: result.usage });
   } catch (err) {
     console.error('Agent run failed:', err);
@@ -89,19 +115,21 @@ app.post('/agent', async (req, res) => {
   }
 });
 
+// ======================= DEBUGGING: Send Message ==========================
 app.post('/send_message', async (req, res) => {
   const { phone_number, message } = req.body;
   const result = await sendWhatsAppText({ to: phone_number, text: message });
   return res.json({ output: result.finalOutput, usage: result.usage });
 });
 
+
+
+
+// SECTION: Server & co
 // ======================= Health Check Route ==================================
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
-
-
-
 
 // ======================= Start Server ========================================
 app.listen(port, () => {

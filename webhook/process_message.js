@@ -10,6 +10,9 @@ import {
   downloadWhatsAppImage
 } from './webhook-helpers.js';
 
+import { hkAgent } from '../agent/hkAgent.js';
+import { specialistAgent } from '../agent/specialistAgent.js';
+
 
  /* Extract message content based on message type
  * @param {Object} message - WhatsApp message object
@@ -17,7 +20,7 @@ import {
  * @param {Object} sender - Sender information
  * @returns {Promise<Object|null>} Object with messageText, imageData, and description, or null if message should be skipped
  */
-async function extractMessageContent(message, businessId, sender) {
+async function extractMessageContent(message, businessId, sender, isSpecialist = false) {
   let messageText = "";
   let imageData = null;
   let imageDescription = null;
@@ -30,7 +33,7 @@ async function extractMessageContent(message, businessId, sender) {
 
     const config = {
       accessToken: process.env.WHATSAPP_ACCESS_TOKEN,
-      phoneNumberId: process.env.WHATSAPP_HK_PHONE_NUMBER_ID,
+      phoneNumberId: isSpecialist ? process.env.WHATSAPP_SPECIALIST_PHONE_NUMBER_ID : process.env.WHATSAPP_HK_PHONE_NUMBER_ID,
       downloadDir: './audio-downloads',
       language: null // Auto-detect language
     };
@@ -89,13 +92,13 @@ async function extractMessageContent(message, businessId, sender) {
  * @param {Array} contacts - WhatsApp contacts array
  * @param {string} businessId - Business phone number ID
  */
-async function processSingleMessage(message, contacts, businessId) {
+async function processSingleMessage(message, contacts, businessId, isSpecialist) {
   // Extract sender information
   const sender = extractSenderInfo(message, contacts);
   console.log(`Processing message from ${sender.phone} (wa_id: ${sender.waId}, name: ${sender.name}), type: ${message.type}`);
 
   // Extract message content based on type
-  const messageContent = await extractMessageContent(message, businessId, sender);
+  const messageContent = await extractMessageContent(message, businessId, sender, isSpecialist);
   
   if (!messageContent) {
     console.log('Message processing skipped (no content or unsupported type)');
@@ -117,10 +120,9 @@ async function processSingleMessage(message, contacts, businessId) {
     }
 
     // Prepare agent input with context
-    const agentInput = `Housekeeper phone number: ${sender.phone}. Task: ${messageText}. Follow the workflow: determine the right specialist, use get_person, send_message to the specialist, then send a confirmation message to the housekeeper using the provided phone number.`;
+    const agentInput = agentInput ?? `Sender phone number: ${sender.phone}. Task: ${messageText}`;
     
-    // Call the agent with conversation context
-    const result = await runAgent(agentInput, conversationHistory);
+    const result = await runAgent(agentInput, conversationHistory, {}, isSpecialist ? specialistAgent : hkAgent);
     
     // Send the agent's response back to the sender
     if (result?.finalOutput) {
@@ -137,7 +139,7 @@ async function processSingleMessage(message, contacts, businessId) {
  * Process incoming WhatsApp messages from webhook
  * @param {Object} entry - WhatsApp webhook entry data
  */
-export async function processWhatsAppMessage(entry) {
+export async function processWhatsAppMessage(entry, isSpecialist) {
   try {
     // Validate webhook structure
     const webhookData = validateWebhookEntry(entry);
@@ -146,14 +148,13 @@ export async function processWhatsAppMessage(entry) {
     }
 
     const { messages, contacts, metadata } = webhookData;
-    const businessId = process.env.WHATSAPP_HK_PHONE_NUMBER_ID;
 
     console.log(`Processing ${messages.length} message(s) from WhatsApp webhook`);
     console.log('Business phone number ID:', metadata?.phone_number_id);
 
     // Process each message
     for (const message of messages) {
-      await processSingleMessage(message, contacts, businessId);
+      await processSingleMessage(message, contacts, isSpecialist ? process.env.WHATSAPP_SPECIALIST_PHONE_NUMBER_ID : process.env.WHATSAPP_HK_PHONE_NUMBER_ID, isSpecialist);
     }
   } catch (processingError) {
     console.error('Webhook async processing error:', processingError);

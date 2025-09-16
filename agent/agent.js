@@ -1,23 +1,9 @@
-import { Agent, run, setDefaultOpenAIKey } from '@openai/agents';
-import getPersonTool from './tools/get_person.js';
-import getOpenTicketsTool from './tools/get_open_tickets.js';
-import createTicketTool from './tools/create_ticket.js';
-import updateTicketTool from './tools/update_ticket.js';
-import { prompt as agentInstructions } from '../utils/prompt.js';
-import sendMessageToSpecialistTool from './tools/send_message_specialist.js';
+import { run, setDefaultOpenAIKey } from '@openai/agents';
 
 if (process.env.OPENAI_API_KEY) {
   setDefaultOpenAIKey(process.env.OPENAI_API_KEY);
 }
 
-export const agent = new Agent({
-  name: 'Assistant',
-  instructions: agentInstructions,
-  tools: [getPersonTool, getOpenTicketsTool, createTicketTool, updateTicketTool, sendMessageToSpecialistTool],
-});
-
-// Basic initialization log
-console.log('[Agent] Initialized', { name: agent.name, tools: agent.tools?.map((t) => t.name) });
 
 /**
  * Run the agent with input and optional conversation context
@@ -26,7 +12,7 @@ console.log('[Agent] Initialized', { name: agent.name, tools: agent.tools?.map((
  * @param {Object} options - Additional options for the run
  * @returns {Promise<Object>} The agent result
  */
-export async function runAgent(input, messages = [], options = {}) {
+export async function runAgent(input, messages = [], options = {}, agent) {
   const startMs = Date.now();
   console.log('[Agent] Run start', { input, messageCount: messages.length });
   
@@ -68,4 +54,6 @@ export async function runAgent(input, messages = [], options = {}) {
   }
 }
 
-export default agent; 
+export default {
+  runAgent,
+}; 

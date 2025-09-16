@@ -126,7 +126,7 @@ async function processSingleMessage(message, contacts, businessId, isSpecialist)
     
     // Send the agent's response back to the sender
     if (result?.finalOutput) {
-      await sendAndStoreResponse(sender.phone, sender.waId, businessId, result.finalOutput);
+      await sendAndStoreResponse(sender.phone, sender.waId, businessId, result.finalOutput, isSpecialist);
     } else {
       console.log('No final output from agent to send back');
     }

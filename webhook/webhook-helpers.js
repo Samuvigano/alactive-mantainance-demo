@@ -100,12 +100,12 @@ export async function getConversationHistory(businessId, userId, messages_number
  * @param {string} responseText - Response text to send
  * @returns {Promise<boolean>} - Success status
  */
-export async function sendAndStoreResponse(senderPhone, senderWaId, businessId, responseText) {
+export async function sendAndStoreResponse(senderPhone, senderWaId, businessId, responseText, isSpecialist) {
   try {
     await sendWhatsAppText({ 
       to: senderPhone, 
       text: responseText,
-      phone_number_id: process.env.WHATSAPP_HK_PHONE_NUMBER_ID
+      phone_number_id: isSpecialist ? process.env.WHATSAPP_SPECIALIST_PHONE_NUMBER_ID : process.env.WHATSAPP_HK_PHONE_NUMBER_ID
     });
     
     // Store the assistant's response  
@@ -129,11 +129,11 @@ export async function sendAndStoreResponse(senderPhone, senderWaId, businessId, 
  * @param {string} businessId - Business phone number ID
  * @param {Error} error - The error that occurred
  */
-export async function handleAgentError(senderPhone, senderWaId, businessId, error) {
+export async function handleAgentError(senderPhone, senderWaId, businessId, error, isSpecialist) {
   console.error('Agent run failed from webhook:', error?.message || error);
   
   const errorMessage = 'Sorry, I encountered an error processing your request. Please try again.';
-  await sendAndStoreResponse(senderPhone, senderWaId, businessId, errorMessage);
+  await sendAndStoreResponse(senderPhone, senderWaId, businessId, errorMessage, isSpecialist);
 } 
 
 /**

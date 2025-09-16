@@ -120,7 +120,7 @@ async function processSingleMessage(message, contacts, businessId, isSpecialist)
     }
 
     // Prepare agent input with context
-    const agentInput = agentInput ?? `Sender phone number: ${sender.phone}. Task: ${messageText}`;
+    const agentInput = `Sender phone number: ${sender.phone}. Task: ${messageText}`;
     
     const result = await runAgent(agentInput, conversationHistory, {}, isSpecialist ? specialistAgent : hkAgent);
     

@@ -44,27 +44,20 @@ app.get("/webhook", (req, res) => {
   verifyWebhook(req, res);
 });
 
-app.get("/webhook_specialist", (req, res) => {
-  verifyWebhook(req, res);
-});
-
 // ======================= Webhook Endpoint ====================================
-const processWebhook = async (req, res, isSpecialist = false) => {
+const processWebhook = async (req, res) => {
   try {
-    const logPrefix = isSpecialist ? 'Specialist webhook' : 'Webhook';
-    console.log(`${logPrefix} received:`, JSON.stringify(req.body, null, 2));
+    console.log('Webhook received:', JSON.stringify(req.body, null, 2));
     
     const { object, entry } = req.body ?? {};
     
     if (object !== 'whatsapp_business_account') {
-      const errorMsg = `Invalid webhook object type${isSpecialist ? ' (specialist)' : ''}:`;
-      console.log(errorMsg, object);
+      console.log('Invalid webhook object type:', object);
       return res.status(400).json({ error: 'Invalid webhook object type' });
     }
     
     if (!entry || !Array.isArray(entry)) {
-      const errorMsg = `Invalid or missing entry array${isSpecialist ? ' (specialist)' : ''}`;
-      console.log(errorMsg);
+      console.log('Invalid or missing entry array');
       return res.status(400).json({ error: 'Invalid or missing entry array' });
     }
 
@@ -72,11 +65,10 @@ const processWebhook = async (req, res, isSpecialist = false) => {
     res.status(200).json({ status: 'received' });
 
     // Continue processing asynchronously after responding
-    setImmediate(() => processWhatsAppMessage(entry, isSpecialist));
+    setImmediate(() => processWhatsAppMessage(entry));
 
   } catch (error) {
-    const errorPrefix = isSpecialist ? 'Specialist webhook error:' : 'Webhook error:';
-    console.error(errorPrefix, error);
+    console.error('Webhook error:', error);
     if (!res.headersSent) {
       res.status(500).json({ error: 'Webhook processing failed' });
     }
@@ -84,11 +76,7 @@ const processWebhook = async (req, res, isSpecialist = false) => {
 };
 
 app.post("/webhook", async (req, res) => {
-  await processWebhook(req, res, false);
-});
-
-app.post("/webhook_specialist", async (req, res) => {
-  await processWebhook(req, res, true);
+  await processWebhook(req, res);
 });
 
 

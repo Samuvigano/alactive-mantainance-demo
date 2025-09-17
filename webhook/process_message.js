@@ -131,7 +131,7 @@ async function processSingleMessage(message, contacts, businessId, isSpecialist)
       console.log('No final output from agent to send back');
     }
   } catch (agentError) {
-    await handleAgentError(sender.phone, sender.waId, businessId, agentError);
+    await handleAgentError(sender.phone, sender.waId, businessId, agentError, isSpecialist);
   }
 }
 
@@ -139,7 +139,7 @@ async function processSingleMessage(message, contacts, businessId, isSpecialist)
  * Process incoming WhatsApp messages from webhook
  * @param {Object} entry - WhatsApp webhook entry data
  */
-export async function processWhatsAppMessage(entry, isSpecialist) {
+export async function processWhatsAppMessage(entry) {
   try {
     // Validate webhook structure
     const webhookData = validateWebhookEntry(entry);
@@ -152,9 +152,23 @@ export async function processWhatsAppMessage(entry, isSpecialist) {
     console.log(`Processing ${messages.length} message(s) from WhatsApp webhook`);
     console.log('Business phone number ID:', metadata?.phone_number_id);
 
+    // Determine if this is from specialist or housekeeper based on phone number ID
+    const phoneNumberId = metadata?.phone_number_id;
+    const isSpecialist = phoneNumberId === process.env.WHATSAPP_SPECIALIST_PHONE_NUMBER_ID;
+    const isHousekeeper = phoneNumberId === process.env.WHATSAPP_HK_PHONE_NUMBER_ID;
+
+    if (!isSpecialist && !isHousekeeper) {
+      console.error('Unknown phone number ID:', phoneNumberId);
+      console.error('Expected specialist ID:', process.env.WHATSAPP_SPECIALIST_PHONE_NUMBER_ID);
+      console.error('Expected housekeeper ID:', process.env.WHATSAPP_HK_PHONE_NUMBER_ID);
+      return;
+    }
+
+    console.log(`Message is from: ${isSpecialist ? 'Specialist' : 'Housekeeper'}`);
+
     // Process each message
     for (const message of messages) {
-      await processSingleMessage(message, contacts, isSpecialist ? process.env.WHATSAPP_SPECIALIST_PHONE_NUMBER_ID : process.env.WHATSAPP_HK_PHONE_NUMBER_ID, isSpecialist);
+      await processSingleMessage(message, contacts, phoneNumberId, isSpecialist);
     }
   } catch (processingError) {
     console.error('Webhook async processing error:', processingError);
